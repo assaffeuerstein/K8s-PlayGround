@@ -1,4 +1,4 @@
-# Creates the Mimir buckets once SeaweedFS is up (idempotent: re-run = "already exists" is ignored).
+# Creates the Mimir buckets via the S3 API once SeaweedFS is up (PUT on an existing bucket is harmless).
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -12,12 +12,14 @@ spec:
     spec:
       restartPolicy: OnFailure
       containers:
-        - name: weed-shell
-          image: chrislusf/seaweedfs:4.48
+        - name: create-buckets
+          image: curlimages/curl:8.11.1
           command: ["/bin/sh", "-c"]
           args:
             - |
+              set -e
               for b in mimir-blocks mimir-ruler mimir-alertmanager; do
-                echo "s3.bucket.create -name $b" | weed shell -master=seaweedfs:9333 || true
+                curl -sS --retry 30 --retry-delay 2 --retry-connrefused --fail-with-body \
+                  --aws-sigv4 "aws:amz:us-east-1:s3" --user admin:adminadmin \
+                  -X PUT "http://seaweedfs:8333/$b" -o /dev/null -w "$b: %{http_code}\n"
               done
-              echo "s3.bucket.list" | weed shell -master=seaweedfs:9333
