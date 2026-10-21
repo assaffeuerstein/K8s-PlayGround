@@ -31,3 +31,99 @@ datasources:
         type: loki
         uid: loki
         url: http://loki-gateway.observability.svc
+
+# Netskope TLS inspection: trust its CA (grafana.com imports, plugin catalog).
+# SSL_CERT_DIR adds this dir to Go's default roots.
+env:
+  SSL_CERT_DIR: /etc/netskope-ca
+extraConfigmapMounts:
+  - name: netskope-ca
+    mountPath: /etc/netskope-ca
+    configMap: netskope-ca
+    readOnly: true
+extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: netskope-ca
+    data:
+      netskope-chain.crt: |
+          -----BEGIN CERTIFICATE-----
+          MIIExDCCA6ygAwIBAgIDNn+nMA0GCSqGSIb3DQEBCwUAMIGUMSUwIwYJKoZIhvcN
+          AQkBDBZjZXJ0YWRtaW5AbmV0c2tvcGUuY29tMRIwEAYDVQQDDAljZXJ0YWRtaW4x
+          EjAQBgNVBAsMCWNlcnRhZG1pbjEWMBQGA1UECgwNTmV0c2tvcGUgSW5jLjERMA8G
+          A1UEBwwIU2FuIEpvc2UxCzAJBgNVBAgMAkNBMQswCQYDVQQGDAJVUzAeFw0yMzEy
+          MjEyMTAwMjNaFw0zMzEyMTgyMTAwMjNaMIG4MSUwIwYJKoZIhvcNAQkBDBZjZXJ0
+          YWRtaW5AbmV0c2tvcGUuY29tMRswGQYDVQQDDBJjYS5sbncuZ29za29wZS5jb20x
+          KTAnBgNVBAsMIDVlMDE2Mjg2MDQyNjRiOTEwM2VjYjUzODU5MmZmNGE1MRkwFwYD
+          VQQKDBBMaWdodCBhbmQgV29uZGVyMRIwEAYDVQQHDAlMYXMgVmVnYXMxCzAJBgNV
+          BAgMAk5WMQswCQYDVQQGDAJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+          ggEBAMLqGQyHHExvKX5mL9x0aUKfLVdrXCkufdYi3+51tPU6rjsUEFNBhAVuhPrK
+          wEUNdoSoYqpUkM9BgYteMXpwVCNKy+B3EmZKDeCjq0p8q3ObtN0QWkgcEXae24fV
+          I89u1zQnvypNq8VszwPhbi+D5DjkFBaCADQTk0tU6RiNlOhp2sIMT3ckFR+ouUQU
+          NNMMZvTFsoYojjYah11abYRqFOyjvFaV+rTAhhRKzocxHHGoHf8a/xCRCwdLOnlm
+          qQ/9abf+1+cnBTwbKhKLBqw3BavMrY9yOSrHW35jEMb5S/IJKoTDbUKN5D56NX6b
+          1rj6c+7qyLSB5YaKLQCIj8Iwe1MCAwEAAaOB+DCB9TAPBgNVHRMBAf8EBTADAQH/
+          MB0GA1UdDgQWBBR3Y8dJZXo4w0TyofWDb1sRsgZGyDCBwgYDVR0jBIG6MIG3gBQV
+          t3Q8rBQqDyEKxxubOEQ84txBTKGBmqSBlzCBlDElMCMGCSqGSIb3DQEJAQwWY2Vy
+          dGFkbWluQG5ldHNrb3BlLmNvbTESMBAGA1UEAwwJY2VydGFkbWluMRIwEAYDVQQL
+          DAljZXJ0YWRtaW4xFjAUBgNVBAoMDU5ldHNrb3BlIEluYy4xETAPBgNVBAcMCFNh
+          biBKb3NlMQswCQYDVQQIDAJDQTELMAkGA1UEBgwCVVOCAgFXMA0GCSqGSIb3DQEB
+          CwUAA4IBAQB2WmKR6NunmGJ3piRxNTt3BEYlA5/o6eqzczqPiYwylH35axuDewua
+          YYJlPDhyQhwqPqVdYO/rCKOw/l3gFKYXMIB0P6H5i0ppUoDvh5UaelFwq9CL10z1
+          Y4skAJ94XclWWwGOihdljdcGrrOBET8sw5pj+tdenhwEAy2pJWYCC8d4JsSqFiLk
+          yWMuVOEsQ5xSEJLUIxggfJTxPivVXAnFQEN8QxhSruLoUaNZsLDaQ2CdPWrYv8sc
+          vmrdy/trVFpdeYgWUx+abA/OO12YoNXVhzFxy12wVr9EgDm1TVdar/xG8ZCAP1Pr
+          gGGZNymJbRDK4mVWSSlKBLlUj24q6SHW
+          -----END CERTIFICATE-----
+           2 s:emailAddress=certadmin@netskope.com, CN=certadmin, OU=certadmin, O=Netskope Inc., L=San Jose, ST=CA, C=US
+             i:emailAddress=certadmin@netskope.com, CN=certadmin, OU=certadmin, O=Netskope Inc., L=San Jose, ST=CA, C=US
+             a:PKEY: RSA, 2048 (bit); sigalg: sha256WithRSAEncryption
+             v:NotBefore: May 12 22:48:42 2022 GMT; NotAfter: May  9 22:48:42 2032 GMT
+          -----BEGIN CERTIFICATE-----
+          MIID+TCCAuGgAwIBAgICAVcwDQYJKoZIhvcNAQELBQAwgZQxJTAjBgkqhkiG9w0B
+          CQEMFmNlcnRhZG1pbkBuZXRza29wZS5jb20xEjAQBgNVBAMMCWNlcnRhZG1pbjES
+          MBAGA1UECwwJY2VydGFkbWluMRYwFAYDVQQKDA1OZXRza29wZSBJbmMuMREwDwYD
+          VQQHDAhTYW4gSm9zZTELMAkGA1UECAwCQ0ExCzAJBgNVBAYMAlVTMB4XDTIyMDUx
+          MjIyNDg0MloXDTMyMDUwOTIyNDg0MlowgZQxJTAjBgkqhkiG9w0BCQEMFmNlcnRh
+          ZG1pbkBuZXRza29wZS5jb20xEjAQBgNVBAMMCWNlcnRhZG1pbjESMBAGA1UECwwJ
+          Y2VydGFkbWluMRYwFAYDVQQKDA1OZXRza29wZSBJbmMuMREwDwYDVQQHDAhTYW4g
+          Sm9zZTELMAkGA1UECAwCQ0ExCzAJBgNVBAYMAlVTMIIBIjANBgkqhkiG9w0BAQEF
+          AAOCAQ8AMIIBCgKCAQEAq9u+p3tH2OaXIai2hiWFFu81G3QH+lAW9H29BX/emqdK
+          U7xD0Wc52TOLALDZos3p3hTOeQMIaC5cCrqUbtE9V4gmtceUFJ/bD/lHlVtQZKl4
+          HcsRAek8cmwIf3bWkeih9XjzbEYY7ffq5ifkT10OENqzrZO9RryDXQnBB6tALB/I
+          MY4JEFzK9Vr8eqLdKHEfCAjAsvU2HePOZXImrPEFcttgOsoGTsC98Jk2JKMlsme0
+          mH136MPhKa54ZrFhNRx/jLogNB+EsWlDeWD78tjlNBTGuX5QAVcBeoijrlMUX4k7
+          cf++fJgUdZSz2k75LEuBMn4pd6sPDsJ5dWppzCMx4QIDAQABo1MwUTAPBgNVHRMB
+          Af8EBTADAQH/MB0GA1UdDgQWBBQVt3Q8rBQqDyEKxxubOEQ84txBTDAfBgNVHSME
+          GDAWgBQVt3Q8rBQqDyEKxxubOEQ84txBTDANBgkqhkiG9w0BAQsFAAOCAQEAFUpG
+          UV6iM7N9GQpkW2bGdPr0aobsxAxlFeMS3I6dDrrlTvAqAxmMpxHa4X9ghUybHU8M
+          6PahBA4K4hJsO5fr6u5HBvvomd6Qad6Ks9DLmhuEBlrj4cRoWyfmGVG0OiObeG8a
+          QJqEmd3wv3ajn1VFif2s2JGVWpGE7/LJKQcNwbIlVycq++5kjF1sc+RpOCQCSq7G
+          LMpX5aOQr+KY7I7nCK01OgVDvhf3amRA5ZvgisSREMah+qqjm3u9jj3LMzpOzJkK
+          6U6Y+TDV1xaumxhTBk7BkbC5spBZfVv8+CA/pv/G8hRvrq++jSJvbWXvz8m5lFT0
+          CivcxSKMW68x8vGHbQ==
+          -----END CERTIFICATE-----
+          ---
+          Server certificate
+          subject=CN=*.jenkins.io
+          issuer=emailAddress=certadmin@netskope.com, CN=ca.lnw.goskope.com, OU=5e01628604264b9103ecb538592ff4a5, O=Light and Wonder, L=Las Vegas, ST=NV, C=US
+          ---
+          No client certificate CA names sent
+          Peer signing digest: SHA256
+          Peer signature type: ecdsa_secp256r1_sha256
+          Peer Temp Key: X25519, 253 bits
+          ---
+          SSL handshake has read 3448 bytes and written 1640 bytes
+          Verification error: self-signed certificate in certificate chain
+          ---
+          New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+          Protocol: TLSv1.3
+          Server public key is 256 bit
+          This TLS version forbids renegotiation.
+          Compression: NONE
+          Expansion: NONE
+          No ALPN negotiated
+          Early data was not sent
+          Verify return code: 19 (self-signed certificate in certificate chain)
+          ---
