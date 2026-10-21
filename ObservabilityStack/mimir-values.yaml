@@ -63,6 +63,10 @@ query_scheduler:
 gateway:
   enabledNonEnterprise: true
   replicas: 1
+  service:
+    type: LoadBalancer
+    port: 9009
+    legacyPort: null
 
 # off for now: enable ruler/alertmanager when you want to learn them
 alertmanager: {enabled: false}
