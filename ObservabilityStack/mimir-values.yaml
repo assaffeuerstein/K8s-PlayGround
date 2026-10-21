@@ -1,0 +1,75 @@
+# Mimir "classic" architecture (ingesters write blocks to S3), sized for Docker Desktop.
+# S3 = SeaweedFS in the storage namespace. Test credentials, local use only.
+mimir:
+  structuredConfig:
+    multitenancy_enabled: false
+    # chart 6.x defaults to Kafka-based ingest storage; classic mode needs no Kafka
+    ingest_storage:
+      enabled: false
+    ingester:
+      push_grpc_method_enabled: true
+      ring:
+        replication_factor: 1
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: seaweedfs.storage.svc:8333
+          access_key_id: admin
+          secret_access_key: adminadmin
+          insecure: true
+          bucket_lookup_type: path
+    blocks_storage:
+      s3:
+        bucket_name: mimir-blocks
+    ruler_storage:
+      s3:
+        bucket_name: mimir-ruler
+    alertmanager_storage:
+      s3:
+        bucket_name: mimir-alertmanager
+
+kafka: {enabled: false}
+minio: {enabled: false}
+rollout_operator: {enabled: false}
+
+# one replica of everything, no zone awareness
+ingester:
+  replicas: 1
+  zoneAwareReplication: {enabled: false}
+  persistentVolume: {size: 5Gi}
+  resources: {requests: {cpu: 100m, memory: 512Mi}, limits: {memory: 1Gi}}
+store_gateway:
+  replicas: 1
+  zoneAwareReplication: {enabled: false}
+  persistentVolume: {size: 2Gi}
+  resources: {requests: {cpu: 50m, memory: 256Mi}, limits: {memory: 512Mi}}
+compactor:
+  replicas: 1
+  persistentVolume: {size: 2Gi}
+  resources: {requests: {cpu: 50m, memory: 256Mi}, limits: {memory: 512Mi}}
+distributor:
+  replicas: 1
+  resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {memory: 512Mi}}
+querier:
+  replicas: 1
+  resources: {requests: {cpu: 50m, memory: 256Mi}, limits: {memory: 512Mi}}
+query_frontend:
+  replicas: 1
+  resources: {requests: {cpu: 50m, memory: 128Mi}, limits: {memory: 512Mi}}
+query_scheduler:
+  replicas: 1
+  resources: {requests: {cpu: 25m, memory: 64Mi}, limits: {memory: 256Mi}}
+gateway:
+  enabledNonEnterprise: true
+  replicas: 1
+
+# off for now: enable ruler/alertmanager when you want to learn them
+alertmanager: {enabled: false}
+ruler: {enabled: false}
+overrides_exporter: {enabled: false}
+memcached: {enabled: false}
+chunks-cache: {enabled: false}
+index-cache: {enabled: false}
+metadata-cache: {enabled: false}
+results-cache: {enabled: false}

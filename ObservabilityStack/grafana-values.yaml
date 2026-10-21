@@ -1,0 +1,33 @@
+# Grafana UI on http://localhost:30300 (Docker Desktop exposes NodePorts on localhost).
+# Local test login: admin / admin. Change before exposing anywhere.
+adminUser: admin
+adminPassword: admin
+
+service:
+  type: NodePort
+  nodePort: 30300
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {memory: 512Mi}
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Mimir
+        type: prometheus
+        uid: mimir
+        url: http://mimir-gateway.observability.svc/prometheus
+        isDefault: true
+        jsonData:
+          httpMethod: POST
+          prometheusType: Mimir
+      - name: Loki
+        type: loki
+        uid: loki
+        url: http://loki-gateway.observability.svc

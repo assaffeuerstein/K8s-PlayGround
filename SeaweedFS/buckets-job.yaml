@@ -1,4 +1,4 @@
-# Creates the Mimir buckets via the S3 API once SeaweedFS is up (PUT on an existing bucket is harmless).
+# Creates the Mimir + Loki buckets via the S3 API once SeaweedFS is up (PUT on an existing bucket is harmless).
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -18,7 +18,7 @@ spec:
           args:
             - |
               set -e
-              for b in mimir-blocks mimir-ruler mimir-alertmanager; do
+              for b in mimir-blocks mimir-ruler mimir-alertmanager loki-chunks loki-ruler loki-admin; do
                 curl -sS --retry 30 --retry-delay 2 --retry-connrefused --fail-with-body \
                   --aws-sigv4 "aws:amz:us-east-1:s3" --user admin:adminadmin \
                   -X PUT "http://seaweedfs:8333/$b" -o /dev/null -w "$b: %{http_code}\n"

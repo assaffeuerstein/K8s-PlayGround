@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # the old grafana/grafana chart is deprecated; it moved to grafana-community
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: grafana
+      targetRevision: 14.0.1
+      helm:
+        releaseName: grafana
+        valueFiles:
+          - $values/ObservabilityStack/grafana-values.yaml
+    - repoURL: https://github.com/assaffeuerstein/K8s-PlayGround.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]
