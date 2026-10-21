@@ -1,11 +1,11 @@
-# Grafana UI on http://localhost:30300 (Docker Desktop exposes NodePorts on localhost).
+# Grafana UI on http://localhost:3000 (Docker Desktop binds LoadBalancer services to localhost).
 # Local test login: admin / admin. Change before exposing anywhere.
 adminUser: admin
 adminPassword: admin
 
 service:
-  type: NodePort
-  nodePort: 30300
+  type: LoadBalancer
+  port: 3000
 
 persistence:
   enabled: true
