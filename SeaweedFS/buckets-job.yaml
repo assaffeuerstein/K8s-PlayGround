@@ -1,0 +1,23 @@
+# Creates the Mimir buckets once SeaweedFS is up (idempotent: re-run = "already exists" is ignored).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-buckets
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: weed-shell
+          image: chrislusf/seaweedfs:4.48
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              for b in mimir-blocks mimir-ruler mimir-alertmanager; do
+                echo "s3.bucket.create -name $b" | weed shell -master=seaweedfs:9333 || true
+              done
+              echo "s3.bucket.list" | weed shell -master=seaweedfs:9333
