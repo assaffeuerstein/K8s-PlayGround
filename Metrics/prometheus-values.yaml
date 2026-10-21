@@ -1,0 +1,15 @@
+# Lens cluster charts read from Prometheus (not metrics-server).
+alertmanager: {enabled: false}
+grafana: {enabled: false}
+# control-plane endpoints aren't reachable on Docker Desktop
+kubeEtcd: {enabled: false}
+kubeScheduler: {enabled: false}
+kubeControllerManager: {enabled: false}
+kubeProxy: {enabled: false}
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    serviceMonitorSelectorNilUsesHelmValues: false
+prometheus-node-exporter:
+  # Docker Desktop: "/" is not a shared mount, default hostRoot mount crashes the pod
+  hostRootFsMount: {enabled: false}

@@ -1,0 +1,14 @@
+services:
+  jenkins:
+    build: .
+    image: jenkins-local:lts-jdk25
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"     # UI
+      - "50000:50000"   # inbound agents
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+volumes:
+  jenkins_home:
