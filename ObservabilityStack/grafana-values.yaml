@@ -22,7 +22,7 @@ datasources:
       - name: Mimir
         type: prometheus
         uid: mimir
-        url: http://mimir-gateway.observability.svc/prometheus
+        url: http://mimir-gateway.observability.svc:9009/prometheus
         isDefault: true
         jsonData:
           httpMethod: POST
