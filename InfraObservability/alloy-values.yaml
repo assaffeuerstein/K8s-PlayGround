@@ -1,0 +1,96 @@
+# Alloy that scrapes on-prem infrastructure and remote-writes to Mimir.
+# Prod shape: runs on the on-prem node of the hybrid EKS cluster, Mimir lives on the cloud side.
+# Test shape (Docker Desktop): same chart, MIMIR_PUSH_URL points at the in-cluster Mimir gateway.
+#
+# Secrets are NOT in git. Create them out of band (README.md):
+#   kubectl -n infra-observability create secret generic pure-api-tokens --from-literal=PURE_TOKEN_FA1=<token>
+
+controller:
+  type: statefulset          # stable identity + PVC so the remote_write WAL survives restarts / WAN outages
+  replicas: 1                # single scraper; do not scale out (targets would be scraped twice)
+  # pin to the on-prem node in prod, e.g.:
+  # nodeSelector: {topology.kubernetes.io/zone: onprem}
+  # tolerations: [{key: onprem, operator: Exists}]
+  volumeClaimTemplates:
+    - metadata: {name: alloy-data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: {requests: {storage: 2Gi}}
+
+alloy:
+  storagePath: /var/lib/alloy
+  mounts:
+    extra:
+      - {name: alloy-data, mountPath: /var/lib/alloy}
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 768Mi}
+  extraEnv:
+    - {name: SITE_NAME, value: onprem-lab}                       # external label "site"
+    - {name: MIMIR_PUSH_URL, value: "http://mimir-gateway.observability.svc:9009/api/v1/push"}
+    - {name: MIMIR_TENANT, value: anonymous}                     # X-Scope-OrgID; ignored while multitenancy is off
+  envFrom:
+    - secretRef: {name: pure-api-tokens, optional: true}
+  configMap:
+    create: true
+    content: |
+      // ---------------------------------------------------------------- shared sink
+      prometheus.remote_write "mimir" {
+        external_labels = { site = sys.env("SITE_NAME") }
+        endpoint {
+          url     = sys.env("MIMIR_PUSH_URL")
+          headers = { "X-Scope-OrgID" = sys.env("MIMIR_TENANT") }
+          queue_config {
+            capacity            = 10000
+            max_samples_per_send = 2000
+          }
+        }
+      }
+
+      // ---------------------------------------------------------------- Pure Storage FlashArray
+      // One instance per array (token isolation). Produces purefa_* series with labels
+      // instance=<name> and env=<env>, which is what the Pure Grafana dashboard expects.
+      // ASSUMPTION: the array serves OpenMetrics at /metrics/<category> with a Bearer API token.
+      // Verify with the probe in README.md before relying on it.
+      declare "pure_flasharray" {
+        argument "name"         { }
+        argument "address"      { }
+        argument "token"        { }
+        argument "env"          { optional = true
+                                  default  = "production" }
+        argument "tls_insecure" { optional = true
+                                  default  = false }
+        argument "forward_to"   { }
+
+        prometheus.scrape "array" {
+          // one target per metric category; the "category" label keeps `up` unique per path
+          targets = [
+            { "__address__" = argument.address.value, "__metrics_path__" = "/metrics/array",       "category" = "array",       "instance" = argument.name.value, "env" = argument.env.value, "job" = "pure-flasharray" },
+            { "__address__" = argument.address.value, "__metrics_path__" = "/metrics/volumes",     "category" = "volumes",     "instance" = argument.name.value, "env" = argument.env.value, "job" = "pure-flasharray" },
+            { "__address__" = argument.address.value, "__metrics_path__" = "/metrics/hosts",       "category" = "hosts",       "instance" = argument.name.value, "env" = argument.env.value, "job" = "pure-flasharray" },
+            { "__address__" = argument.address.value, "__metrics_path__" = "/metrics/pods",        "category" = "pods",        "instance" = argument.name.value, "env" = argument.env.value, "job" = "pure-flasharray" },
+            { "__address__" = argument.address.value, "__metrics_path__" = "/metrics/directories", "category" = "directories", "instance" = argument.name.value, "env" = argument.env.value, "job" = "pure-flasharray" },
+          ]
+          scheme          = "https"
+          scrape_interval = "60s"
+          scrape_timeout  = "50s"
+          authorization {
+            type        = "Bearer"
+            credentials = argument.token.value
+          }
+          tls_config {
+            insecure_skip_verify = argument.tls_insecure.value
+          }
+          forward_to = argument.forward_to.value
+        }
+      }
+
+      // ---- arrays: add one block per array, token comes from the pure-api-tokens secret ----
+      pure_flasharray "fa1" {
+        name         = "pure-fa-01"                 // REPLACE: shown as "instance" in dashboards
+        address      = "pure-fa-01.example.com"     // REPLACE: array management IP / FQDN
+        token        = sys.env("PURE_TOKEN_FA1")
+        env          = "production"
+        tls_insecure = true                         // self-signed array cert; set false + CA in prod
+        forward_to   = [prometheus.remote_write.mimir.receiver]
+      }
